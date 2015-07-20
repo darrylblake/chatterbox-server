@@ -12,6 +12,17 @@ this file and include it in basic-server.js so that it actually works.
 
 **************************************************************/
 
+var messages = [
+  {
+    username: 'Test',
+    roomname: 'Test',
+    text: 'Test'
+  }
+
+];
+
+var fs = require('fs');
+
 var requestHandler = function(request, response) {
   // Request and Response come from node's http module.
   //
@@ -39,11 +50,41 @@ var requestHandler = function(request, response) {
   //
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = "text/plain";
+  // headers['Content-Type'] = "text/plain";
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
-  response.writeHead(statusCode, headers);
+  // response.writeHead(statusCode, headers);
+
+
+/*  var http = require('http');
+var fs = require('fs');
+
+http.createServer(function(req, res){
+    fs.readFile('test.html',function (err, data){
+        res.writeHead(200, {'Content-Type': 'text/html','Content-Length':data.length});
+        res.write(data);
+        res.end();
+    });
+}).listen(8000);*/
+
+
+  if (request.url === "/chatterbox?order=-createdAt") {
+    // Serve messages as a JSON file
+    headers['Content-Type'] = "application/json";
+    response.writeHead(statusCode, headers);
+    response.end(JSON.stringify(messages));
+  } else {
+    // Serving static content
+    headers['Content-Type'] = "text/html";
+    response.writeHead(statusCode, headers);
+    if (request.url === "/") {
+      response.writeHead(302, {'Location': 'index.html'});
+    }
+    fs.readFile('../client' + request.url.split("?")[0], function(err, data) {
+      response.end(data);
+    });
+  }
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
@@ -52,7 +93,7 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end("Hello, World!");
+  //response.end("Hello, World!");
 };
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
@@ -71,3 +112,4 @@ var defaultCorsHeaders = {
   "access-control-max-age": 10 // Seconds.
 };
 
+module.exports = requestHandler;
