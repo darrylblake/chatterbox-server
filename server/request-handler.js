@@ -13,13 +13,10 @@ this file and include it in basic-server.js so that it actually works.
 **************************************************************/
 
 var messages = {
-  results: [{
-    username: 'Test',
-    roomname: 'Test',
-    text: 'Test'
-  }]
+  results: []
 };
 
+var http = require("http");
 var fs = require('fs');
 
 var requestHandler = function(request, response) {
@@ -67,17 +64,24 @@ http.createServer(function(req, res){
     });
 }).listen(8000);*/
   
+  response.writeHead(statusCode, headers);
   
   if (stripUrl(request.url) === "/classes/messages") {
     if (request.method === "GET") {
       // Serve messages as a JSON file
       headers['Content-Type'] = "application/json";
-      response.writeHead(statusCode, headers);
       response.end(JSON.stringify(messages));
     }
     if (request.method === "POST") {
-      console.log(request.body);
-      //messages.results.push(request.)    
+      var body = '';
+      request.on('data', function(chunk) {
+        body += chunk;
+      });
+      request.on('end', function(){
+        response.writeHead(201, headers);
+        messages['results'].push(JSON.parse(body));
+        response.end();
+      });
     }
   } else {
     // Serving static content
