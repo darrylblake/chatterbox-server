@@ -83,6 +83,22 @@ http.createServer(function(req, res){
         response.end();
       });
     }
+  } else if (stripUrl(request.url).split('/')[1] === "classes") {
+    if (request.method === "GET") {
+      response.writeHead(200, headers);
+      var roomname = stripUrl(request.url).split('/')[2];
+      response.end(JSON.stringify(messages));
+    } else if (request.method === "POST") {
+      var otherBody = '';
+      request.on('data', function(chunk) {
+        otherBody += chunk;
+      });
+      request.on('end', function(){
+        response.writeHead(201, headers);
+        messages['results'].push(JSON.parse(otherBody));
+        response.end();
+      });
+    }
   } else {
     // Serving static content
     headers['Content-Type'] = "text/html";
@@ -91,9 +107,10 @@ http.createServer(function(req, res){
       response.writeHead(302, {'Location': 'index.html'});
     }
     fs.readFile('../client' + stripUrl(request.url), function(err, data) {
+      // Detect filetype based on extension...
       if (err) {
         response.writeHead(404, headers);
-        response.end('404: Not found!');
+        response.end('<img src="http://33.media.tumblr.com/tumblr_m15vecveRC1rs2heko1_500.gif">');
       }
       response.end(data);
     });
@@ -129,4 +146,4 @@ var defaultCorsHeaders = {
   "access-control-max-age": 10 // Seconds.
 };
 
-module.exports = requestHandler;
+exports.requestHandler = requestHandler;
