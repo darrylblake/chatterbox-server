@@ -12,14 +12,13 @@ this file and include it in basic-server.js so that it actually works.
 
 **************************************************************/
 
-var messages = [
-  {
+var messages = {
+  results: [{
     username: 'Test',
     roomname: 'Test',
     text: 'Test'
-  }
-
-];
+  }]
+};
 
 var fs = require('fs');
 
@@ -67,13 +66,19 @@ http.createServer(function(req, res){
         res.end();
     });
 }).listen(8000);*/
-
-
-  if (request.url === "/chatterbox?order=-createdAt") {
-    // Serve messages as a JSON file
-    headers['Content-Type'] = "application/json";
-    response.writeHead(statusCode, headers);
-    response.end(JSON.stringify(messages));
+  
+  
+  if (stripUrl(request.url) === "/classes/messages") {
+    if (request.method === "GET") {
+      // Serve messages as a JSON file
+      headers['Content-Type'] = "application/json";
+      response.writeHead(statusCode, headers);
+      response.end(JSON.stringify(messages));
+    }
+    if (request.method === "POST") {
+      console.log(request.body);
+      //messages.results.push(request.)    
+    }
   } else {
     // Serving static content
     headers['Content-Type'] = "text/html";
@@ -81,7 +86,11 @@ http.createServer(function(req, res){
     if (request.url === "/") {
       response.writeHead(302, {'Location': 'index.html'});
     }
-    fs.readFile('../client' + request.url.split("?")[0], function(err, data) {
+    fs.readFile('../client' + stripUrl(request.url), function(err, data) {
+      if (err) {
+        response.writeHead(404, headers);
+        response.end('404: Not found!');
+      }
       response.end(data);
     });
   }
@@ -94,6 +103,10 @@ http.createServer(function(req, res){
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
   //response.end("Hello, World!");
+};
+
+var stripUrl = function(url) {
+  return url.split("?")[0];
 };
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
