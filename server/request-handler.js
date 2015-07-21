@@ -79,7 +79,10 @@ http.createServer(function(req, res){
       });
       request.on('end', function(){
         response.writeHead(201, headers);
-        messages['results'].push(JSON.parse(body));
+        body = JSON.parse(body);
+        body.createdAt = new Date();
+        body.objectId = messages.results.length;
+        messages['results'].push(body);
         response.end();
       });
     }
@@ -101,8 +104,9 @@ http.createServer(function(req, res){
     }
   } else {
     // Serving static content
-    headers['Content-Type'] = "text/html";
+    headers['Content-Type'] = detectContentType(stripUrl(request.url));
     response.writeHead(statusCode, headers);
+    // Redirect
     if (request.url === "/") {
       response.writeHead(302, {'Location': 'index.html'});
     }
@@ -116,6 +120,9 @@ http.createServer(function(req, res){
     });
   }
 
+  ///bower_components/jquery/dist/jquery.min.js
+
+
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
   // response.end() will be the body of the response - i.e. what shows
@@ -123,12 +130,29 @@ http.createServer(function(req, res){
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  //response.end("Hello, World!");
+  // response.end("Hello, World!");
 };
 
 var stripUrl = function(url) {
   return url.split("?")[0];
 };
+
+var detectContentType = function(url) {
+
+  var ext = url.split('.').slice(-1).toString();
+  if (ext === 'html') {
+    return "text/html";
+  }
+  if (ext === 'js') {
+    return "application/javascript";
+  }
+  if (ext === 'css') {
+    return "text/css";
+  }
+  if (ext === 'gif') {
+    return "image/gif"
+  }
+}
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
