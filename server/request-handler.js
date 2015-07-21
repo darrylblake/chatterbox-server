@@ -52,76 +52,52 @@ var requestHandler = function(request, response) {
   // which includes the status and all headers.
   // response.writeHead(statusCode, headers);
 
-
-/*  var http = require('http');
-var fs = require('fs');
-
-http.createServer(function(req, res){
-    fs.readFile('test.html',function (err, data){
-        res.writeHead(200, {'Content-Type': 'text/html','Content-Length':data.length});
-        res.write(data);
-        res.end();
-    });
-}).listen(8000);*/
-  
+  // Setting the default status code and header    
   response.writeHead(statusCode, headers);
-  
+  // Checking if we have messages
   if (stripUrl(request.url) === "/classes/messages") {
+    // Respond to GET
     if (request.method === "GET") {
       // Serve messages as a JSON file
       headers['Content-Type'] = "application/json";
       response.end(JSON.stringify(messages));
     }
+    // Respond to POST
     if (request.method === "POST") {
-      var body = '';
-      request.on('data', function(chunk) {
-        body += chunk;
-      });
-      request.on('end', function(){
-        response.writeHead(201, headers);
-        body = JSON.parse(body);
-        body.createdAt = new Date();
-        body.objectId = messages.results.length;
-        messages['results'].push(body);
-        response.end();
-      });
+      // Separate relevant message data from POST request
+      handlePosts(request, response, headers);
     }
+
+  // Handle requests for rooms
   } else if (stripUrl(request.url).split('/')[1] === "classes") {
     if (request.method === "GET") {
       response.writeHead(200, headers);
       var roomname = stripUrl(request.url).split('/')[2];
       response.end(JSON.stringify(messages));
     } else if (request.method === "POST") {
-      var otherBody = '';
-      request.on('data', function(chunk) {
-        otherBody += chunk;
-      });
-      request.on('end', function(){
-        response.writeHead(201, headers);
-        messages['results'].push(JSON.parse(otherBody));
-        response.end();
-      });
+      handlePosts(request, response, headers);
     }
+
+  // Serving static content
   } else {
-    // Serving static content
+    // Create headers with correct content type
     headers['Content-Type'] = detectContentType(stripUrl(request.url));
     response.writeHead(statusCode, headers);
-    // Redirect
+    // Redirecting to index.html because of hard-coded username in url
     if (request.url === "/") {
       response.writeHead(302, {'Location': 'index.html'});
     }
+    // Read requested file and return with the content type defined above
     fs.readFile('../client' + stripUrl(request.url), function(err, data) {
-      // Detect filetype based on extension...
+      // Returning a 404 if file does not exist
       if (err) {
         response.writeHead(404, headers);
         response.end('<img src="http://33.media.tumblr.com/tumblr_m15vecveRC1rs2heko1_500.gif">');
       }
+      // Finally returning the contents of the file 
       response.end(data);
     });
   }
-
-  ///bower_components/jquery/dist/jquery.min.js
-
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
@@ -133,12 +109,31 @@ http.createServer(function(req, res){
   // response.end("Hello, World!");
 };
 
+var handlePosts = function(request, response, headers) {
+  var body = '';
+  request.on('data', function(chunk) {
+    body += chunk;
+  });
+  // At end of request, add info to storage and generate response
+  request.on('end', function(){
+    // Add message data to storage
+    body = JSON.parse(body);
+    body.createdAt = new Date();
+    body.objectId = messages.results.length;
+    messages['results'].push(body);
+    // Generate a "Created OK" response
+    response.writeHead(201, headers);
+    response.end();
+  });
+}
+
+// Removes username or extra data from url
 var stripUrl = function(url) {
   return url.split("?")[0];
 };
 
+// Returns correct content type based on extension
 var detectContentType = function(url) {
-
   var ext = url.split('.').slice(-1).toString();
   if (ext === 'html') {
     return "text/html";
