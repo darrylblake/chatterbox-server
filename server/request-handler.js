@@ -60,7 +60,19 @@ var requestHandler = function(request, response) {
     if (request.method === "GET") {
       // Serve messages as a JSON file
       headers['Content-Type'] = "application/json";
-      response.end(JSON.stringify(messages));
+
+      fs.readFile('messages.JSON', function(err, data) {
+        // Returning a 404 if file does not exist
+        if (err) {
+          response.writeHead(404, headers);
+          console.log('Unable to read messages.JSON');
+        } else {
+          messages.results = JSON.parse('[' + data.toString().slice(0, -3) + ']');
+        }
+        // Finally returning the contents of the file 
+        response.end(JSON.stringify(messages));
+      });      
+
     }
     // Respond to POST
     if (request.method === "POST") {
@@ -109,6 +121,19 @@ var requestHandler = function(request, response) {
   // response.end("Hello, World!");
 };
 
+var fileReader = function(location) {
+  fs.readFile(location, function(err, data) {
+    // Returning a 404 if file does not exist
+    if (err) {
+      response.writeHead(404, headers);
+      response.end('<img src="http://33.media.tumblr.com/tumblr_m15vecveRC1rs2heko1_500.gif">');
+      return '';
+    }
+    // Finally returning the contents of the file
+    return data;
+  });
+}
+
 var handlePosts = function(request, response, headers) {
   var body = '';
   request.on('data', function(chunk) {
@@ -120,7 +145,15 @@ var handlePosts = function(request, response, headers) {
     body = JSON.parse(body);
     body.createdAt = new Date();
     body.objectId = messages.results.length;
-    messages['results'].push(body);
+    //messages['results'].push(body);
+    var appendToFile = JSON.stringify(body) + ', \n';
+    fs.appendFile('messages.JSON', appendToFile, function(err) {
+      if (err) {
+        throw err;
+      } else {
+        console.log(' file written');
+      }
+    });
     // Generate a "Created OK" response
     response.writeHead(201, headers);
     response.end();
